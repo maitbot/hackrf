@@ -1,7 +1,9 @@
 #top dir cmake project for libhackrf + tools
 
-cmake_minimum_required(VERSION 2.8.12)
-project (HackRF C)
+cmake_minimum_required(VERSION 3.16)
+project (HackRF LANGUAGES C HOMEPAGE_URL https://greatscottgadgets.com/hackrf/)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_FLAGS "$ENV{CFLAGS}" CACHE STRING "C Flags")
 

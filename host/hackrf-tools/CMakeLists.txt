@@ -18,12 +18,10 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 #
+cmake_minimum_required(VERSION 3.16)
+project(hackrf-tools LANGUAGES C)
+include(GNUInstallDirs)
 
-# Based heavily upon the libftdi cmake setup.
-
-cmake_minimum_required(VERSION 2.8.12)
-project(hackrf-tools C)
-set(PACKAGE hackrf-tools)
 include(${PROJECT_SOURCE_DIR}/../cmake/set_release.cmake)
 add_definitions(-DTOOL_RELEASE="${RELEASE}")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake/modules)
@@ -33,14 +31,10 @@ include_directories(getopt)
 add_definitions(/D _CRT_SECURE_NO_WARNINGS)
 else()
 add_definitions(-Wall)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu90")
 endif()
 
 if(NOT libhackrf_SOURCE_DIR)
-find_package(LIBHACKRF REQUIRED)
-include_directories(${LIBHACKRF_INCLUDE_DIR})
-else()
-include_directories(${libhackrf_SOURCE_DIR}/src)
+find_package(HackRF REQUIRED)
 endif()
 
 add_subdirectory(src)

@@ -21,36 +21,66 @@
 
 # Based heavily upon the libftdi cmake setup.
 
-cmake_minimum_required(VERSION 2.8.12)
-project(libhackrf C)
-set(MAJOR_VERSION 0)
-set(MINOR_VERSION 9)
-set(PACKAGE libhackrf)
-set(VERSION_STRING ${MAJOR_VERSION}.${MINOR_VERSION})
-set(VERSION ${VERSION_STRING})
-add_definitions(-DLIBRARY_VERSION="${VERSION_STRING}")
+cmake_minimum_required(VERSION 3.16)
+project(libhackrf LANGUAGES C VERSION 0.9)
+include(GNUInstallDirs)
+include(GenerateExportHeader)
 include(${PROJECT_SOURCE_DIR}/../cmake/set_release.cmake)
-add_definitions(-DLIBRARY_RELEASE="${RELEASE}")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake/modules)
 
 if(MSVC)
 	set(THREADS_USE_PTHREADS_WIN32 true)
 else()
-	add_definitions(-Wall)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu90")
-
-	INCLUDE(TestBigEndian)
+	include(TestBigEndian)
 	TEST_BIG_ENDIAN(BIGENDIAN)
 	if(${BIGENDIAN})
 		 add_definitions(-DHACKRF_BIG_ENDIAN)
 	endif(${BIGENDIAN})
 endif()
-find_package(USB1 REQUIRED)
+
+find_package(LIBUSB REQUIRED)
 find_package(Threads REQUIRED)
 
-include_directories(${LIBUSB_INCLUDE_DIR} ${THREADS_PTHREADS_INCLUDE_DIR})
-
 add_subdirectory(src)
+
+########################################################################
+# Create Cmake Config-file package interface
+########################################################################
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/HackRF/HackRFConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT HackRFTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/HackRF/HackRFTargets.cmake"
+  NAMESPACE HackRF::
+)
+configure_file(HackRFConfig.cmake
+  "${CMAKE_CURRENT_BINARY_DIR}/HackRF/HackRFConfig.cmake"
+  COPYONLY
+)
+
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/HackRF)
+install(EXPORT HackRFTargets
+  FILE
+    HackRFTargets.cmake
+  NAMESPACE
+    HackRF::
+  DESTINATION
+    ${ConfigPackageLocation}
+)
+install(
+  FILES
+    HackRFConfig.cmake
+    ../cmake/modules/FindLIBUSB.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/HackRF/HackRFConfigVersion.cmake"
+  DESTINATION
+    ${ConfigPackageLocation}
+  COMPONENT
+    Devel
+)
 
 ########################################################################
 # Create Pkg Config File
@@ -90,7 +120,7 @@ INSTALL(
 )
 
 ########################################################################
-# Create Pkg Config File
+# Handle udev rules file
 ########################################################################
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")

@@ -20,30 +20,49 @@
 # HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Based heavily upon the libftdi cmake setup.
-
-# Targets
-set(c_sources ${CMAKE_CURRENT_SOURCE_DIR}/hackrf.c CACHE INTERNAL "List of C sources")
-set(c_headers ${CMAKE_CURRENT_SOURCE_DIR}/hackrf.h CACHE INTERNAL "List of C headers")
 
 # Dynamic library
-add_library(hackrf SHARED ${c_sources})
-set_target_properties(hackrf PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.0 SOVERSION 0)
+add_library(hackrf SHARED hackrf.c)
+set_target_properties(hackrf PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION_MAJOR})
 
 # Static library
-add_library(hackrf-static STATIC ${c_sources})
+add_library(hackrf-static STATIC hackrf.c)
 if(MSVC)
 	set_target_properties(hackrf-static PROPERTIES OUTPUT_NAME "hackrf_static")
 else()
 	set_target_properties(hackrf-static PROPERTIES OUTPUT_NAME "hackrf")
 endif()
 
+target_compile_features(hackrf PRIVATE c_std_90)
+target_compile_features(hackrf-static PRIVATE c_std_90)
+
 set_target_properties(hackrf PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 set_target_properties(hackrf-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
+target_compile_definitions(hackrf PRIVATE
+  -DLIBRARY_VERSION="${PROJECT_VERSION}"
+  -DLIBRARY_RELEASE="${RELEASE}")
+target_compile_definitions(hackrf-static PRIVATE
+  -DLIBRARY_VERSION="${PROJECT_VERSION}"
+  -DLIBRARY_RELEASE="${RELEASE}")
+
+target_include_directories(
+  hackrf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
+target_include_directories(
+  hackrf-static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
+
 # Dependencies
-target_link_libraries(hackrf ${LIBUSB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-   
+target_link_libraries(hackrf PRIVATE LIBUSB::LIBUSB Threads::Threads)
+target_link_libraries(hackrf-static PUBLIC LIBUSB::LIBUSB Threads::Threads)
+
+generate_export_header(hackrf)
+
 # For cygwin just force UNIX OFF and WIN32 ON
 if( ${CYGWIN} )
   SET(UNIX OFF)
@@ -51,17 +70,13 @@ if( ${CYGWIN} )
 endif( ${CYGWIN} )
 
 if( ${UNIX} )
-   install(TARGETS hackrf
-           LIBRARY DESTINATION lib${LIB_SUFFIX}
+   install(TARGETS hackrf EXPORT HackRFTargets
+           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
            COMPONENT sharedlibs
            )
-   install(TARGETS hackrf-static
-           ARCHIVE DESTINATION lib${LIB_SUFFIX}
+   install(TARGETS hackrf-static EXPORT HackRFTargets
+           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
            COMPONENT staticlibs
-           )
-   install(FILES ${c_headers}
-           DESTINATION include/${PROJECT_NAME}
-           COMPONENT headers
            )
 endif( ${UNIX} )
 
@@ -80,8 +95,10 @@ if( ${WIN32} )
            DESTINATION bin
            COMPONENT staticlibs
            )
-   install(FILES ${c_headers}
-           DESTINATION include/${PROJECT_NAME}
-           COMPONENT headers
-           )
 endif( ${WIN32} )
+
+install(FILES hackrf.h
+#  "${CMAKE_CURRENT_BINARY_DIR}/hackrf_export.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
+  COMPONENT headers
+)

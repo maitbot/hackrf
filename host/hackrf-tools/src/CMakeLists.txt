@@ -19,14 +19,7 @@
 # Boston, MA 02110-1301, USA.
 #
 
-# Based heavily upon the libftdi cmake setup.
-
-set(INSTALL_DEFAULT_BINDIR "bin" CACHE STRING "Appended to CMAKE_INSTALL_PREFIX")
-
-find_package(FFTW REQUIRED)
-include_directories(${FFTW_INCLUDES})
-get_filename_component(FFTW_LIBRARY_DIRS ${FFTW_LIBRARIES} DIRECTORY)
-link_directories(${FFTW_LIBRARY_DIRS})
+find_package(FFTW3f REQUIRED)
 
 SET(TOOLS
 	hackrf_transfer
@@ -40,35 +33,29 @@ SET(TOOLS
 	hackrf_biast
 )
 
-if(MSVC)
-	add_library(libgetopt_static STATIC
-	    ../getopt/getopt.c
-	)
-	LIST(APPEND TOOLS_LINK_LIBS ${FFTW_LIBRARIES})
-else()
-    LIST(APPEND TOOLS_LINK_LIBS m fftw3f)
-endif()
-
 if(NOT libhackrf_SOURCE_DIR)
-	include_directories(${LIBHACKRF_INCLUDE_DIR})
-	LIST(APPEND TOOLS_LINK_LIBS ${LIBHACKRF_LIBRARIES})
+        LIST(APPEND TOOLS_LINK_LIBS HackRF::hackrf)
 else()
 	LIST(APPEND TOOLS_LINK_LIBS hackrf)
 endif()
 
 if(MSVC)
+	add_library(libgetopt_static STATIC
+	    ../getopt/getopt.c
+	)
 	LIST(APPEND TOOLS_LINK_LIBS libgetopt_static)
 endif()
 
 foreach(tool ${TOOLS})
-	add_executable(${tool} ${tool}.c)
-	target_link_libraries(${tool} ${TOOLS_LINK_LIBS})
-	install(TARGETS ${tool} RUNTIME DESTINATION ${INSTALL_DEFAULT_BINDIR})
+        add_executable(${tool} ${tool}.c)
+        target_compile_features(${tool} PRIVATE c_std_90)
+	target_link_libraries(${tool} ${TOOLS_LINK_LIBS} fftw3f::fftw3f)
+	install(TARGETS ${tool} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach(tool)
 
 if( ${WIN32} )
 	install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/"
-        	DESTINATION ${INSTALL_DEFAULT_BINDIR}
-			FILES_MATCHING
-			PATTERN "fftw*.dll")
+	  DESTINATION ${CMAKE_INSTALL_BINDIR}
+	  FILES_MATCHING
+	  PATTERN "fftw*.dll")
 endif( ${WIN32} )
