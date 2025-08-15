@@ -1,3 +1,4 @@
+
 # Copyright 2012 Jared Boone
 # Copyright 2013 Benjamin Vernoux
 #
@@ -19,39 +20,55 @@
 # Boston, MA 02110-1301, USA.
 #
 
-find_package(FFTW3f REQUIRED)
+option(ENABLE_HACKRF_SWEEP
+  "Build and Install hackrf_sweep tool (Requires FFTW3f)"
+  ON)
+find_package(FFTW3f)
 
-SET(TOOLS
+set(TOOLS
 	hackrf_transfer
 	hackrf_spiflash
 	hackrf_cpldjtag
 	hackrf_info
 	hackrf_debug
 	hackrf_clock
-	hackrf_sweep
 	hackrf_operacake
 	hackrf_biast
 )
 
 if(NOT libhackrf_SOURCE_DIR)
-        LIST(APPEND TOOLS_LINK_LIBS HackRF::hackrf)
+        list(APPEND TOOLS_LINK_LIBS HackRF::hackrf)
 else()
-	LIST(APPEND TOOLS_LINK_LIBS hackrf)
+	list(APPEND TOOLS_LINK_LIBS hackrf)
 endif()
 
 if(MSVC)
 	add_library(libgetopt_static STATIC
 	    ../getopt/getopt.c
 	)
-	LIST(APPEND TOOLS_LINK_LIBS libgetopt_static)
+	list(APPEND TOOLS_LINK_LIBS libgetopt_static)
+endif()
+
+include(CheckLibraryExists)
+check_library_exists(m log10 "" LIBM)
+if(LIBM)
+    list(APPEND TOOLS_LINK_LIBS m)
 endif()
 
 foreach(tool ${TOOLS})
         add_executable(${tool} ${tool}.c)
         target_compile_features(${tool} PRIVATE c_std_90)
-	target_link_libraries(${tool} ${TOOLS_LINK_LIBS} fftw3f::fftw3f)
+	target_link_libraries(${tool} ${TOOLS_LINK_LIBS})
 	install(TARGETS ${tool} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach(tool)
+if(PC_FFTW3f_FOUND AND ENABLE_HACKRF_SWEEP)
+        add_executable(hackrf_sweep hackrf_sweep.c)
+        target_compile_features(hackrf_sweep PRIVATE c_std_90)
+	target_link_libraries(hackrf_sweep fftw3f::fftw3f ${TOOLS_LINK_LIBS})
+	install(TARGETS hackrf_sweep RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+else()
+  message(STATUS "Not building hackrf_sweep tool. (Install FFTW and set ENABLE_HACKRF_SWEEP)")
+endif()
 
 if( ${WIN32} )
 	install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/"
