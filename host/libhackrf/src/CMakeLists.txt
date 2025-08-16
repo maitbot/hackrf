@@ -67,7 +67,7 @@ if( ${UNIX} )
 endif( ${UNIX} )
 
 if( ${WIN32} )
-   install(TARGETS hackrf
+   install(TARGETS hackrf EXPORT HackRFTargets
            DESTINATION bin
            COMPONENT sharedlibs
            )
