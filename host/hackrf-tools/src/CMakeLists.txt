@@ -1,6 +1,7 @@
 
 # Copyright 2012 Jared Boone
 # Copyright 2013 Benjamin Vernoux
+# Copyright 2025 A. Maitland Bottoms <bottoms@debian.org>
 #
 # This file is part of HackRF.
 #
@@ -36,10 +37,10 @@ set(TOOLS
 	hackrf_biast
 )
 
-if(NOT libhackrf_SOURCE_DIR)
-        list(APPEND TOOLS_LINK_LIBS HackRF::hackrf)
+if(TARGET HackRF::hackrf)
+  list(APPEND TOOLS_LINK_LIBS HackRF::hackrf)
 else()
-	list(APPEND TOOLS_LINK_LIBS hackrf)
+  list(APPEND TOOLS_LINK_LIBS HackRF::hackrf_static)
 endif()
 
 if(MSVC)

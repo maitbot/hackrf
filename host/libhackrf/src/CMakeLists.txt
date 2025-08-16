@@ -2,6 +2,7 @@
 # Copyright (c) 2012, Jared Boone <jared@sharebrained.com>
 # Copyright (c) 2013, Benjamin Vernoux <titanmkd@gmail.com>
 # Copyright (c) 2013, Michael Ossmann <mike@ossmann.com>
+# Copyright (c) 2025, A. Maitland Bottoms <bottoms@debian.org>
 # 
 # All rights reserved.
 # 
@@ -21,47 +22,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-# Dynamic library
-add_library(hackrf SHARED hackrf.c)
-set_target_properties(hackrf PROPERTIES
-  VERSION ${PROJECT_VERSION}
-  SOVERSION ${PROJECT_VERSION_MAJOR})
-
-# Static library
-add_library(hackrf-static STATIC hackrf.c)
-if(MSVC)
-	set_target_properties(hackrf-static PROPERTIES OUTPUT_NAME "hackrf_static")
-else()
-	set_target_properties(hackrf-static PROPERTIES OUTPUT_NAME "hackrf")
-endif()
-
-target_compile_features(hackrf PRIVATE c_std_90)
-target_compile_features(hackrf-static PRIVATE c_std_90)
-
-set_target_properties(hackrf PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-set_target_properties(hackrf-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-
-target_compile_definitions(hackrf PRIVATE
-  -DLIBRARY_VERSION="${PROJECT_VERSION}"
-  -DLIBRARY_RELEASE="${RELEASE}")
-target_compile_definitions(hackrf-static PRIVATE
-  -DLIBRARY_VERSION="${PROJECT_VERSION}"
-  -DLIBRARY_RELEASE="${RELEASE}")
-
-target_include_directories(
-  hackrf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
-target_include_directories(
-  hackrf-static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
-
-# Dependencies
-target_link_libraries(hackrf PRIVATE LIBUSB::LIBUSB Threads::Threads)
-target_link_libraries(hackrf-static PUBLIC LIBUSB::LIBUSB Threads::Threads)
-
-generate_export_header(hackrf)
+option(ENABLE_STATIC_LIB
+  "Build and Install libhackrf.a static library"
+  ON)
+option(ENABLE_SHARED_LIB
+  "Build and Install libhackrf.so shared library"
+  ON)
 
 # For cygwin just force UNIX OFF and WIN32 ON
 if( ${CYGWIN} )
@@ -69,14 +35,34 @@ if( ${CYGWIN} )
   SET(WIN32 ON)
 endif( ${CYGWIN} )
 
+# Dynamic library
+if (ENABLE_SHARED_LIB)
+add_library(hackrf SHARED hackrf.c)
+set_target_properties(hackrf PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION_MAJOR})
+
+target_compile_features(hackrf PRIVATE c_std_90)
+set_target_properties(hackrf PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+
+target_compile_definitions(hackrf PRIVATE
+  -DLIBRARY_VERSION="${PROJECT_VERSION}"
+  -DLIBRARY_RELEASE="${RELEASE}")
+
+target_include_directories(
+  hackrf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
+
+target_link_libraries(hackrf PRIVATE LIBUSB::LIBUSB Threads::Threads)
+
+generate_export_header(hackrf)
+add_library(HackRF::hackrf ALIAS hackrf)
+
 if( ${UNIX} )
    install(TARGETS hackrf EXPORT HackRFTargets
            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
            COMPONENT sharedlibs
-           )
-   install(TARGETS hackrf-static EXPORT HackRFTargets
-           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-           COMPONENT staticlibs
            )
 endif( ${UNIX} )
 
@@ -85,15 +71,56 @@ if( ${WIN32} )
            DESTINATION bin
            COMPONENT sharedlibs
            )
+endif( ${WIN32} )
+endif()
+
+# Static library
+if (ENABLE_STATIC_LIB)
+
+add_library(hackrf_static STATIC hackrf.c)
+if(MSVC)
+	set_target_properties(hackrf_static PROPERTIES OUTPUT_NAME "hackrf_static")
+else()
+	set_target_properties(hackrf_static PROPERTIES OUTPUT_NAME "hackrf")
+endif()
+
+target_compile_features(hackrf_static PRIVATE c_std_90)
+set_target_properties(hackrf_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+
+target_compile_definitions(hackrf_static PRIVATE
+  -DLIBRARY_VERSION="${PROJECT_VERSION}"
+  -DLIBRARY_RELEASE="${RELEASE}")
+
+target_include_directories(
+  hackrf_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
+
+target_link_libraries(hackrf_static PUBLIC LIBUSB::LIBUSB Threads::Threads)
+add_library(HackRF::hackrf_static ALIAS hackrf_static)
+
+if( ${UNIX} )
+   install(TARGETS hackrf_static EXPORT HackRFTargets
+           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+           COMPONENT staticlibs
+           )
+endif( ${UNIX} )
+
+if( ${WIN32} )
+   install(TARGETS hackrf_static
+           DESTINATION bin
+           COMPONENT staticlibs
+           )
+endif( ${WIN32} )
+endif()
+
+
+if( ${WIN32} )
    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/"
            DESTINATION bin
            FILES_MATCHING
            PATTERN "libusb*.dll"
            PATTERN "pthread*.dll"
-           )
-   install(TARGETS hackrf-static
-           DESTINATION bin
-           COMPONENT staticlibs
            )
 endif( ${WIN32} )
 

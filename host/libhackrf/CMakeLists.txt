@@ -19,8 +19,6 @@
 # Boston, MA 02110-1301, USA.
 #
 
-# Based heavily upon the libftdi cmake setup.
-
 cmake_minimum_required(VERSION 3.16)
 project(libhackrf LANGUAGES C VERSION 0.9)
 include(GNUInstallDirs)
