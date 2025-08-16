@@ -34,7 +34,14 @@ add_definitions(-Wall)
 endif()
 
 if(NOT libhackrf_SOURCE_DIR)
-find_package(HackRF REQUIRED)
+  if (LIBHACKRF_INCLUDE_DIR AND LIBHACKRF_LIBRARIES AND NOT TARGET HackRF::hackrf)
+    add_library(HackRF::hackrf INTERFACE IMPORTED)
+    set_target_properties(HackRF::hackrf PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${LIBHACKRF_INCLUDE_DIR}"
+      INTERFACE_LINK_LIBRARIES "${LIBHACKRF_LIBRARIES}")
+  else()
+    find_package(HackRF REQUIRED)
+  endif()
 endif()
 
 add_subdirectory(src)
