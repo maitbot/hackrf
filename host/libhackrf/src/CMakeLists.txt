@@ -54,7 +54,12 @@ target_include_directories(
                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
 
-target_link_libraries(hackrf PRIVATE LIBUSB::LIBUSB Threads::Threads)
+target_link_libraries(hackrf PRIVATE LIBUSB::LIBUSB)
+if (TARGET PThreads4W::PThreads4W)
+  target_link_libraries(hackrf PRIVATE PThreads4W::PThreads4W)
+else()
+  target_link_libraries(hackrf PRIVATE Threads::Threads)
+endif()
 
 generate_export_header(hackrf)
 add_library(HackRF::hackrf ALIAS hackrf)
@@ -97,7 +102,13 @@ target_include_directories(
                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
 
 target_link_libraries(hackrf_static PUBLIC LIBUSB::LIBUSB Threads::Threads)
+
 add_library(HackRF::hackrf_static ALIAS hackrf_static)
+if (TARGET PThreads4W::PThreads4W)
+  target_link_libraries(hackrf_static PRIVATE PThreads4W::PThreads4W)
+else()
+  target_link_libraries(hackrf_static  PRIVATE Threads::Threads)
+endif()
 
 if( ${UNIX} )
    install(TARGETS hackrf_static EXPORT HackRFTargets

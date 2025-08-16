@@ -38,6 +38,7 @@ endif()
 
 find_package(LIBUSB REQUIRED)
 find_package(Threads REQUIRED)
+find_package(PThreads4W QUIET)
 
 add_subdirectory(src)
 
