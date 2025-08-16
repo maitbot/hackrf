@@ -30,7 +30,9 @@ mark_as_advanced(FFTW3f_LIBRARIES FFTW3f_INCLUDE_DIRS FFTW3f_THREADS_LIBRARIES)
 
 if(FFTW3f_FOUND AND NOT TARGET fftw3f::fftw3f)
     add_library(fftw3f::fftw3f INTERFACE IMPORTED)
-    list(APPEND FFTW3f_LIBRARIES m)
+    if (NOT WIN32)
+      list(APPEND FFTW3f_LIBRARIES m)
+    endif()
     set_target_properties(
         fftw3f::fftw3f PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${FFTW3f_INCLUDE_DIRS}"
                                   INTERFACE_LINK_LIBRARIES "${FFTW3f_LIBRARIES}")

@@ -52,7 +52,7 @@ endif()
 
 include(CheckLibraryExists)
 check_library_exists(m log10 "" LIBM)
-if(LIBM AND NOT WIN32)
+if(LIBM)
     list(APPEND TOOLS_LINK_LIBS m)
 endif()
 
