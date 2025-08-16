@@ -39,6 +39,11 @@ endif()
 
 add_subdirectory(src)
 
+option(INSTALL_MANPAGES "Install man pages" OFF)
+if (INSTALL_MANPAGES)
+  add_subdirectory(man)
+endif()
+
 ########################################################################
 # Create uninstall target
 ########################################################################
