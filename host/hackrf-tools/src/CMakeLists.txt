@@ -52,7 +52,7 @@ endif()
 
 include(CheckLibraryExists)
 check_library_exists(m log10 "" LIBM)
-if(LIBM)
+if(LIBM AND NOT WIN32)
     list(APPEND TOOLS_LINK_LIBS m)
 endif()
 
@@ -71,9 +71,9 @@ else()
   message(STATUS "Not building hackrf_sweep tool. (Install FFTW and set ENABLE_HACKRF_SWEEP)")
 endif()
 
-if( ${WIN32} )
+if( WIN32 )
 	install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/"
 	  DESTINATION ${CMAKE_INSTALL_BINDIR}
 	  FILES_MATCHING
 	  PATTERN "fftw*.dll")
-endif( ${WIN32} )
+endif()
