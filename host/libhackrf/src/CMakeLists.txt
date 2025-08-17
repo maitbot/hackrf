@@ -28,6 +28,9 @@ option(ENABLE_STATIC_LIB
 option(ENABLE_SHARED_LIB
   "Build and Install libhackrf.so shared library"
   ON)
+option(DISABLE_USB_DEVICE_DISCOVERY
+  "Prevent libusb from trying to enumerate devices. Useful on non-root android"
+  ANDROID)
 
 # For cygwin just force UNIX OFF and WIN32 ON
 if( ${CYGWIN} )
@@ -48,6 +51,9 @@ set_target_properties(hackrf PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 target_compile_definitions(hackrf PRIVATE
   -DLIBRARY_VERSION="${PROJECT_VERSION}"
   -DLIBRARY_RELEASE="${RELEASE}")
+if (DISABLE_USB_DEVICE_DISCOVERY)
+  target_compile_definitions(hackrf PRIVATE -DDISABLE_USB_DEVICE_DISCOVERY)
+endif()
 
 target_include_directories(
   hackrf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -95,6 +101,9 @@ set_target_properties(hackrf_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 target_compile_definitions(hackrf_static PRIVATE
   -DLIBRARY_VERSION="${PROJECT_VERSION}"
   -DLIBRARY_RELEASE="${RELEASE}")
+if (DISABLE_USB_DEVICE_DISCOVERY)
+  target_compile_definitions(hackrf_static PRIVATE -DDISABLE_USB_DEVICE_DISCOVERY)
+endif()
 
 target_include_directories(
   hackrf_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
