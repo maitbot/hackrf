@@ -38,102 +38,67 @@ if( ${CYGWIN} )
   SET(WIN32 ON)
 endif( ${CYGWIN} )
 
-# Dynamic library
-if (ENABLE_SHARED_LIB)
-add_library(hackrf SHARED hackrf.c)
-set_target_properties(hackrf PROPERTIES
+# Settings common for shared and static libraries
+function(libhackrf_common_settings libtarget)
+set_target_properties(${libtarget} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR})
 
-target_compile_features(hackrf PRIVATE c_std_90)
+target_compile_features(${libtarget} PRIVATE c_std_90)
 set_target_properties(hackrf PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-target_compile_definitions(hackrf PRIVATE
+target_compile_definitions(${libtarget} PRIVATE
   -DLIBRARY_VERSION="${PROJECT_VERSION}"
   -DLIBRARY_RELEASE="${RELEASE}")
 if (DISABLE_USB_DEVICE_DISCOVERY)
-  target_compile_definitions(hackrf PRIVATE -DDISABLE_USB_DEVICE_DISCOVERY)
+  target_compile_definitions(${libtarget} PRIVATE -DDISABLE_USB_DEVICE_DISCOVERY)
 endif()
 
-target_include_directories(
-  hackrf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
+target_include_directories(${libtarget} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
 
-target_link_libraries(hackrf PRIVATE LIBUSB::LIBUSB)
+target_link_libraries(${libtarget} PRIVATE LIBUSB::LIBUSB)
 if (TARGET PThreads4W::PThreads4W)
-  target_link_libraries(hackrf PRIVATE PThreads4W::PThreads4W)
+  target_link_libraries(${libtarget} PRIVATE PThreads4W::PThreads4W)
 else()
-  target_link_libraries(hackrf PRIVATE Threads::Threads)
+  target_link_libraries(${libtarget} PRIVATE Threads::Threads)
 endif()
-
-generate_export_header(hackrf)
-add_library(HackRF::hackrf ALIAS hackrf)
 
 if( ${UNIX} )
-   install(TARGETS hackrf EXPORT HackRFTargets
+   install(TARGETS ${libtarget} EXPORT HackRFTargets
            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
            COMPONENT sharedlibs
            )
 endif( ${UNIX} )
 
 if( ${WIN32} )
-   install(TARGETS hackrf EXPORT HackRFTargets
+   install(TARGETS ${libtarget} EXPORT HackRFTargets
            DESTINATION bin
            COMPONENT sharedlibs
            )
 endif( ${WIN32} )
+endfunction()
+
+# Dynamic library
+if (ENABLE_SHARED_LIB)
+  add_library(hackrf SHARED hackrf.c)
+  libhackrf_common_settings(hackrf)
+  generate_export_header(hackrf)
+  add_library(HackRF::hackrf ALIAS hackrf)
 endif()
 
 # Static library
 if (ENABLE_STATIC_LIB)
-
-add_library(hackrf_static STATIC hackrf.c)
-if(MSVC)
-	set_target_properties(hackrf_static PROPERTIES OUTPUT_NAME "hackrf_static")
-else()
-	set_target_properties(hackrf_static PROPERTIES OUTPUT_NAME "hackrf")
+  add_library(hackrf_static STATIC hackrf.c)
+  if(MSVC)
+    set_target_properties(hackrf_static PROPERTIES OUTPUT_NAME "hackrf_static")
+  else()
+    set_target_properties(hackrf_static PROPERTIES OUTPUT_NAME "hackrf")
+  endif()
+  libhackrf_common_settings(hackrf_static)
 endif()
-
-target_compile_features(hackrf_static PRIVATE c_std_90)
-set_target_properties(hackrf_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-
-target_compile_definitions(hackrf_static PRIVATE
-  -DLIBRARY_VERSION="${PROJECT_VERSION}"
-  -DLIBRARY_RELEASE="${RELEASE}")
-if (DISABLE_USB_DEVICE_DISCOVERY)
-  target_compile_definitions(hackrf_static PRIVATE -DDISABLE_USB_DEVICE_DISCOVERY)
-endif()
-
-target_include_directories(
-  hackrf_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libhackrf>)
-
-target_link_libraries(hackrf_static PUBLIC LIBUSB::LIBUSB Threads::Threads)
-
-add_library(HackRF::hackrf_static ALIAS hackrf_static)
-if (TARGET PThreads4W::PThreads4W)
-  target_link_libraries(hackrf_static PRIVATE PThreads4W::PThreads4W)
-else()
-  target_link_libraries(hackrf_static  PRIVATE Threads::Threads)
-endif()
-
-if( ${UNIX} )
-   install(TARGETS hackrf_static EXPORT HackRFTargets
-           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-           COMPONENT staticlibs
-           )
-endif( ${UNIX} )
-
-if( ${WIN32} )
-   install(TARGETS hackrf_static
-           DESTINATION bin
-           COMPONENT staticlibs
-           )
-endif( ${WIN32} )
-endif()
-
 
 if( ${WIN32} )
    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/"
